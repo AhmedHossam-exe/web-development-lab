@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f3fc;
+            margin: 0;
+            padding: 40px 20px;
+        }
+        .container {
+            background-color: white;
+            max-width: 550px;
+            margin: auto;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        }
+        h2 {
+            font-size: 18px;
+            color: #202938;
+            margin-top: 5px;
+        }
+        .input-area {
+            display: flex;
+            gap: 7px;
+        }
+        input[type="text"] {
+            flex: 1;
+            padding: 9px;
+            border: 1px solid #ddd;
+            border-radius: 7px;
+            outline: none;
+        }
+        #addBtn {
+            background-color: #397cf6;
+            color: white;
+            border: none;
+            padding: 9px 16px;
+            border-radius: 7px;
+            cursor: pointer;
+        }
+        #addBtn:hover {
+            background-color: #2465d9;
+        }
+        .info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 13px;
+            font-size: 11px;
+            color: #777;
+        }
+        .filters button {
+            border: none;
+            background: none;
+            padding: 6px 10px;
+            cursor: pointer;
+            color: #555;
+        }
+        .filters button.active {
+            background-color: #e8efff;
+            color: #397cf6;
+            border-radius: 6px;
+        }
+        ul {
+            list-style: none;
+            padding: 0;
+            margin-top: 10px;
+        }
+        li {
+            display: flex;
+            align-items: center;
+            padding: 12px 10px;
+            border-top: 1px solid #f1f1f1;
+            gap: 10px;
+        }
+        li input[type="checkbox"] {
+            accent-color: #b58bd5;
+            cursor: pointer;
+        }
+        li span {
+            flex: 1;
+            font-size: 13px;
+            color: #202938;
+            cursor: pointer;
+        }
+        li.completed span {
+            text-decoration: line-through;
+            color: #999;
+        }
+        .delete {
+            border: none;
+            background: none;
+            color: #999;
+            cursor: pointer;
+            font-size: 15px;
+        }
+        .delete:hover {
+            color: red;
+        }
+        .bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            color: #777;
+            margin-top: 10px;
+        }
+        .bottom button {
+            font-size: 11px;
+            cursor: pointer;
+            margin-left: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Todo App</h2>
+        <div class="input-area">
+            <input type="text" id="taskInput"
+                   placeholder="What needs doing?">
+            <button id="addBtn" onclick="addTask()">Add</button>
+        </div>
+        <div class="info">
+            <div class="filters">
+                <button class="active" onclick="filterTasks('all', this)">All</button>
+                <button onclick="filterTasks('active', this)">Active</button>
+                <button onclick="filterTasks('completed', this)">Completed</button>
+            </div>
+        </div>
+
+        <ul id="taskList"></ul>
+
+        <div class="bottom">
+            <span id="remaining">0 items left</span>
+
+            <div>
+                <button onclick="clearCompleted()">Clear completed</button>
+                <button onclick="clearAll()">Clear all</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        let tasks = [];
+        let currentFilter = "all";
+        function addTask() {
+            let input = document.getElementById("taskInput");
+            let text = input.value.trim();
+
+            if (text === "") return;
+
+            tasks.push({
+                text: text,
+                completed: false
+            });
+
+            input.value = "";
+            renderTasks();
+        }
+        document.getElementById("taskInput").addEventListener("keydown", function(e) {
+            if (e.key === "Enter") {
+                addTask();
+            }
+        });
+        function renderTasks() {
+            let list = document.getElementById("taskList");
+            list.innerHTML = "";
+            tasks.forEach((task, index) => {
+                if (currentFilter === "active" && task.completed) return;
+                if (currentFilter === "completed" && !task.completed) return;
+                let li = document.createElement("li");
+                if (task.completed) {
+                    li.classList.add("completed");
+                }
+                let checkbox = document.createElement("input");
+                checkbox.type = "checkbox";
+                checkbox.checked = task.completed;
+
+                checkbox.onchange = function() {
+                    tasks[index].completed = checkbox.checked;
+                    renderTasks();
+                };
+                let span = document.createElement("span");
+                span.textContent = task.text;
+                span.ondblclick = function() {
+                    let newText = prompt("Edit your task:", task.text);
+                    if (newText !== null && newText.trim() !== "") {
+                        tasks[index].text = newText.trim();
+                        renderTasks();
+                    }
+                };
+                let deleteBtn = document.createElement("button");
+                deleteBtn.textContent = "🗑️";
+                deleteBtn.className = "delete";
+                deleteBtn.onclick = function() {
+                    tasks.splice(index, 1);
+                    renderTasks();
+                };
+                li.appendChild(checkbox);
+                li.appendChild(span);
+                li.appendChild(deleteBtn);
+                list.appendChild(li);
+            });
+            updateRemaining();
+        }
+        function filterTasks(filter, button) {
+            currentFilter = filter;
+            document.querySelectorAll(".filters button").forEach(btn => {
+                btn.classList.remove("active");
+            });
+            button.classList.add("active");
+            renderTasks();
+        }
+        function updateRemaining() {
+            let count = tasks.filter(task => !task.completed).length;
+
+            document.getElementById("remaining").textContent =
+                count + (count === 1 ? " item left" : " items left");
+        }
+        function clearCompleted() {
+            tasks = tasks.filter(task => !task.completed);
+            renderTasks();
+        }
+        function clearAll() {
+            tasks = [];
+            renderTasks();
+        }
+        renderTasks();
+    </script>
+</body>
+</html>
